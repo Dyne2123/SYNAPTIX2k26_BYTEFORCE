@@ -4,6 +4,7 @@ import json
 import random
 from main import JSEARCH
 from main import send_whatsapp_message
+import requests
 
 def search_jobs(query, phonenumber, country="India", api_key=JSEARCH, max_jobs=1):
     """
@@ -37,7 +38,7 @@ def search_jobs(query, phonenumber, country="India", api_key=JSEARCH, max_jobs=1
         jd = job.get("job_description")
         qual_list = job.get("job_highlights", {}).get("Qualifications", [])
 
-        # If no explicit qualifications, try extracting from description
+        
         if not qual_list and jd:
             qual_keywords = ["Education", "Required Skills", "Qualifications", 
                              "Experience", "Relevant Work Experience", "Skills", "Requirements"]
@@ -47,14 +48,14 @@ def search_jobs(query, phonenumber, country="India", api_key=JSEARCH, max_jobs=1
         if qual_list:
             jobs_with_qual.append((job, qual_list))
         elif jd:
-            jobs_without_qual.append((job, []))  # Include description even if no quals
+            jobs_without_qual.append((job, [])) 
 
-    # Prioritize jobs with qualifications
+    
     prioritized_jobs = jobs_with_qual + jobs_without_qual
     if not prioritized_jobs:
         return "No jobs with description or qualifications found."
 
-    # Randomize and pick up to max_jobs
+    
     random.shuffle(prioritized_jobs)
     prioritized_jobs = prioritized_jobs[:max_jobs]
 
@@ -64,7 +65,7 @@ def search_jobs(query, phonenumber, country="India", api_key=JSEARCH, max_jobs=1
         company = job.get("employer_name", "Unknown company")
         link = job.get("job_google_link", job.get("job_apply_link", "#"))
 
-        # Job description bullets
+       
         jd = job.get("job_description", "")
         jd_lines = [line.strip() for line in jd.split("\n") if line.strip()]
         bullets = random.sample(jd_lines, min(3, len(jd_lines))) if jd_lines else []
@@ -101,3 +102,150 @@ def search_jobs(query, phonenumber, country="India", api_key=JSEARCH, max_jobs=1
 
     final = "\n\n".join(formatted_jobs)
     send_whatsapp_message(phonenumber, final)
+
+from main import METAL
+BASE_URL = "https://api.metalpriceapi.com/v1/latest"
+api= METAL
+
+def get_gold_price():
+    params = {
+        "api_key": api,
+        "base": "XAU",     
+        "currencies": "INR"  
+    }
+    
+    response = requests.get(BASE_URL, params=params)
+    print(response.json())
+    if response.status_code != 200:
+        return f" API Error: {response.status_code}"
+
+    data = response.json()
+
+    if not data.get("success"):
+        return " API returned failure"
+
+    rates = data.get("rates", {})
+    inr_per_ounce = rates.get("INR")
+
+    if not inr_per_ounce:
+        return " No INR rate found"
+
+    # Convert ounce → gram
+    price_per_gram = inr_per_ounce / 31.1035
+
+    return f"🪙 Gold Price: ₹{price_per_gram:.2f} per gram"
+
+
+
+import secrets
+import string
+
+def generate_password(length=16):
+    if length < 8:
+        raise ValueError("Password length should be at least 8 characters")
+
+    # Character sets
+    lowercase = string.ascii_lowercase
+    uppercase = string.ascii_uppercase
+    digits = string.digits
+    special = string.punctuation
+
+    # Ensure password contains at least one from each category
+    password = [
+        secrets.choice(lowercase),
+        secrets.choice(uppercase),
+        secrets.choice(digits),
+        secrets.choice(special)
+    ]
+
+    # Fill the rest of the password length
+    all_chars = lowercase + uppercase + digits + special
+    password += [secrets.choice(all_chars) for _ in range(length - 4)]
+
+    # Shuffle the password
+    secrets.SystemRandom().shuffle(password)
+
+    return ''.join(password)
+
+def fetch_crypto_data(params):
+    from main import CRYPTO
+    api_key = CRYPTO
+    """
+    Base CoinMarketCap API caller.
+    Accepts dynamic params and returns JSON data.
+    """
+    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+
+    headers = {
+        "Accepts": "application/json",
+        "X-CMC_PRO_API_KEY": api_key,
+    }
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        return response.json()
+
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}
+    
+def get_top_10(currency="INR"):
+    params = {
+        "start": "1",
+        "limit": "10",
+        "convert": currency
+    }
+
+    data = fetch_crypto_data(params)
+
+    if "error" in data:
+        return data["error"]
+
+    result = []
+    for coin in data["data"]:
+        price = coin["quote"][currency]["price"]
+        result.append(
+            f"{coin['cmc_rank']}. {coin['name']} ({coin['symbol']}) : {currency} {price:,.2f}"
+        )
+    res = "\n".join(result)
+    return res
+
+import yfinance as yf
+
+def get_stock_price(company_name):
+    try:
+        # Search company
+        search = yf.Search(company_name)
+        results = search.quotes
+
+        if not results:
+            return "Company not found."
+
+        ticker_symbol = results[0]["symbol"]
+        short_name = results[0].get("shortname", ticker_symbol)
+
+        stock = yf.Ticker(ticker_symbol)
+        hist = stock.history(period="1d")
+
+        if hist.empty:
+            return "Price data not available."
+
+        price = hist["Close"].iloc[-1]
+
+        # Detect currency
+        info = stock.info
+        currency = info.get("currency", "USD")
+
+        # If already INR (like NSE stocks)
+        if currency == "INR":
+            return f"{short_name} ({ticker_symbol}) → ₹{price:,.2f}"
+
+        # Convert USD → INR
+        usd_inr = yf.Ticker("USDINR=X").history(period="1d")["Close"].iloc[-1]
+        price_inr = price * usd_inr
+
+        return f"{short_name} ({ticker_symbol}) → ₹{price_inr:,.2f}"
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+

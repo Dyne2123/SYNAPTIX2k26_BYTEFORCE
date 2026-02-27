@@ -1,6 +1,7 @@
 #database.py
 from pymongo import MongoClient
 
+
 class MongoDB:
     def __init__(self):
         self.MONGO_URI = "mongodb://localhost:27017/"
@@ -29,23 +30,28 @@ class MongoDB:
             
             self.collection.insert_one(template)
             self.add_bot_history(phonenumber,{"system":"only reply to last user message consider remaining as context. Your name is UtilityBot. Introduce yourself at first conversation"})
+            from main import send_whatsapp_message
+            send_whatsapp_message(phonenumber,"Welcome to utilbot\n type / help to view commands\n or chat with our ai agent to learn new things")
             print(f"[DEBUG] New user added: {phonenumber}")
         
     def add_bot_history(self,phone_number,message):
         data = {"user":message}
         result = self.collection.update_one(
-                    {"phone_number": phone_number},   # filter by phone number
-                    {"$push": {"bot_history": message}})  # append new entry
+                    {"phone_number": phone_number},   
+                    {"$push": {"bot_history": message}})  
         print("history added")
 
     def get_bot_history(self,number):
         doc = self.collection.find_one(
-        {"phone_number": number},     # filter
-        {"_id": 0, "bot_history": 1}  # projection
-    )
+        {"phone_number": number},     
+        {"_id": 0, "bot_history": 1} 
+        )
         if doc:
             return doc.get("bot_history", [])
         return []
+    
+    def store_image(self,image):
+        pass
 
 
 

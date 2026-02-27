@@ -16,15 +16,13 @@ VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 JSEARCH = os.getenv("JSEARCH")
+METAL = os.getenv("METALPRICE")
+CRYPTO = os.getenv("CRYPTOAPI")
 
-# ----------------------------
-# Initialize Flask App
-# ----------------------------
+
 app = Flask(__name__)
 
-# ----------------------------
-# Webhook Verification (GET)
-# ----------------------------
+
 @app.route("/webhook", methods=["GET"])
 def verify_webhook():
     mode = request.args.get("hub.mode")
@@ -38,9 +36,7 @@ def verify_webhook():
     return "Verification failed", 403
 
 
-# ----------------------------
-# Receive Messages (POST)
-# ----------------------------
+
 @app.route("/webhook", methods=["POST"])
 def receive_message():
     try:
@@ -72,9 +68,6 @@ def receive_message():
         return "Internal Server Error", 500
 
 
-# ----------------------------
-# Extract Message Data
-# ----------------------------
 def extract_whatsapp_message(payload: dict):
     try:
         if payload.get("object") != "whatsapp_business_account":
@@ -98,7 +91,8 @@ def extract_whatsapp_message(payload: dict):
 
         user_name = contacts[0].get("profile", {}).get("name")
         phone_number = contacts[0].get("wa_id")
-
+        global number
+        number = phone_number
         message_type = messages[0].get("type")
         
 
@@ -110,9 +104,20 @@ def extract_whatsapp_message(payload: dict):
                 chat_bot(phone_number,text_message)
             else:
                 parse_command(text_message,phone_number)
+
+        elif message_type == "image":
+            media_id = messages[0].get("image", {}).get("id")
+            mime_type = messages[0].get("image", {}).get("mime_type")
+
+            print("Image received!")
+            print("Media ID:", media_id)
+
+            if media_id:
+                file_path = download_whatsapp_media(media_id, mime_type)
+                message = f"[Image received and saved as {file_path}]"
+            else:
+                message = "[Image received but no media ID found]"
             
-        else:
-            text_message = f"[Unsupported message type: {message_type}]"
 
         
 
@@ -125,6 +130,9 @@ def extract_whatsapp_message(payload: dict):
     except Exception as e:
         print("Extraction error:", e)
         return None
+    
+def download_whatsapp_media(media_id, mime_type):
+    pass
 
 
 # ----------------------------
@@ -156,6 +164,7 @@ def send_whatsapp_message(recipient_number: str, message_text: str):
     except Exception as e:
         print("Send message error:", e)
         return None
+
 def chat_bot(number,message):
     user_msg = {"user":message}
     MongoDB().add_bot_history(number,user_msg)
@@ -175,11 +184,34 @@ def parse_command(command,number):
         print("query ", query)
         search_jobs(parsed[2],number)
 
+    if parsed[1].strip() == "help":
+        text = "======= Avaliable commands ========\n1. / job  {query} :to search for jobs\n 2. / gold :to get current live gold price \n 3. / password :to generate strong random password \n 4. / crypto10 :get the price of top 10 crypto currencies \n 5. / getstockprice {company name} :get the stock price of the company"
+        send_whatsapp_message(number,text)
+
+    if parsed[1].strip() == "gold":
+        from utility import get_gold_price
+        text = get_gold_price()
+        send_whatsapp_message(number,text)
+
+    if parsed[1].strip() == "password":
+        from utility import generate_password
+        text = generate_password()
+        send_whatsapp_message(number,text)
+    
+    if parsed[1].strip() == "crypto10":
+        from utility import get_top_10
+        text = get_top_10()
+        send_whatsapp_message(number,text)
+
+    if parsed[1].strip() == "getstockprice":
+        from utility import get_stock_price
+        company = parsed[2].strip()
+        text = get_stock_price(company)
+        send_whatsapp_message(number,text)
 
 
 
-# ----------------------------
-# Run Application
-# ----------------------------
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
