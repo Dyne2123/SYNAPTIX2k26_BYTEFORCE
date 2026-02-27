@@ -1,4 +1,4 @@
-# database.py
+#database.py
 from pymongo import MongoClient
 
 class MongoDB:
@@ -16,15 +16,37 @@ class MongoDB:
 
         self.collection = self.db["UserData"]
 
-    def add_user(self, data):
+    def add_user(self,username,phonenumber):
         """Insert user if not exists"""
-        x = self.collection.find_one({"phone_number": data["phone"]})
+        x = self.collection.find_one({"phone_number": phonenumber})
         if not x:
             template = {
-                "name": data["name"],
-                "phone_number": data["phone"],
+                "name": username,
+                "phone_number": phonenumber,
                 "bot_history": [],
                 "bot_summary": ""
             }
+            
             self.collection.insert_one(template)
-            print(f"[DEBUG] New user added: {data['phone']}")
+            self.add_bot_history(phonenumber,{"system":"only reply to last user message consider remaining as context"})
+            print(f"[DEBUG] New user added: {phonenumber}")
+        
+    def add_bot_history(self,phone_number,message):
+        data = {"user":message}
+        result = self.collection.update_one(
+                    {"phone_number": phone_number},   # filter by phone number
+                    {"$push": {"bot_history": message}})  # append new entry
+        print("history added")
+
+    def get_bot_history(self,number):
+        doc = self.collection.find_one(
+        {"phone_number": number},     # filter
+        {"_id": 0, "bot_history": 1}  # projection
+    )
+        if doc:
+            return doc.get("bot_history", [])
+        return []
+
+
+
+        

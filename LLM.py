@@ -1,51 +1,68 @@
-# gemini_chat_db.py
-import os
-from google.genai import Client
 from database import MongoDB
 
-class GeminiChatDB:
-    """
-    Gemini Chat with persistent storage in MongoDB per user.
-    """
-    def __init__(self, api_key: str, model: str = "gemini-2.5-flash"):
-        os.environ["GENAI_API_KEY"] = api_key
-        self.client = Client()
-        self.model = model
-        self.mongo = MongoDB()  # MongoDB instance
+from google import genai
 
-    def _get_or_create_user(self, user_phone, user_name="Unknown"):
-        """Ensure user exists in DB"""
-        user = self.mongo.collection.find_one({"phone_number": user_phone})
-        if not user:
-            self.mongo.add_user({"name": user_name, "phone": user_phone})
-            user = self.mongo.collection.find_one({"phone_number": user_phone})
-        return user
 
-    def send_message(self, user_phone: str, message: str, user_name="Unknown") -> str:
-        """Send a message to Gemini with persistent history in MongoDB"""
-        user = self._get_or_create_user(user_phone, user_name)
 
-        # Create chat session
-        chat_session = self.client.chats.create(model=self.model)
+# def LLM(message,phonenumber):
+#     client = genai.Client(api_key="AIzaSyCp454P0OxDKSguWg_TlcqCEyyJTK7MIfk")
+#     history = MongoDB().get_bot_history(phonenumber)
+#     fixed_history = [
+#         {"role": "user", "content": msg["user"]} for msg in history
+#     ]
 
-        # Load previous messages for context
-        for msg in user.get("bot_history", []):
-            chat_session.send_message(f"{msg['role']}: {msg['content']}")
+#     print("history",history)
+#     contents_list = [f"{msg['role']}: {msg['content']}" for msg in fixed_history]
+#     print(contents_list)
+#     response = client.models.generate_content(
+#         model="gemini-3-flash-preview",
+#         contents=contents_list
+#     )
+#     print(response.text)
+#     bot_response = {"assistant":response.text}
+#     user_msg = message
+    
+#     MongoDB().add_bot_history(phonenumber,bot_response)
 
-        # Send the new user message
-        response = chat_session.send_message(message)
+#     return response.text
 
-        # Update MongoDB history
-        new_history_user = {"role": "user", "content": message}
-        new_history_bot = {"role": "assistant", "content": response.text}
+def LLM(message, phonenumber):
+    client = genai.Client(api_key="AIzaSyC5i6V45r3aA6HKs55T0ago2__KHGD-1qI")
+    db = MongoDB()
 
-        self.mongo.collection.update_one(
-            {"phone_number": user_phone},
-            {"$push": {"bot_history": {"$each": [new_history_user, new_history_bot]}}}
-        )
+    # Fetch history from MongoDB
+    history = db.get_bot_history(phonenumber)  # returns list of dicts
+    # Normalize all history entries to {"role": ..., "content": ...}
+    fixed_history = []
+    for msg in history:
+        if "user" in msg:
+            fixed_history.append({"role": "user", "content": msg["user"]})
+        elif "assistant" in msg:
+            fixed_history.append({"role": "assistant", "content": msg["assistant"]})
+        elif "system" in msg:
+            fixed_history.append({"role": "system","content":msg["system"]})
 
-        return response.text
+    # Append the current user message
+    fixed_history.append({"role": "user", "content": message})
 
-    def get_history(self, user_phone: str):
-        user = self.mongo.collection.find_one({"phone_number": user_phone})
-        return user.get("bot_history", []) if user else []
+    # Prepare contents list for Gemini
+    contents_list = [f"{msg['role']}: {msg['content']}" for msg in fixed_history]
+
+    print("Normalized history:", fixed_history)
+    print("Contents sent to Gemini:", contents_list)
+
+    # Call Gemini API
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=contents_list
+    )
+
+    bot_reply = response.text
+    print("Gemini reply:", bot_reply)
+
+    return bot_reply
+
+
+def chat_bot(data):
+    username = data["name"]
+    phone = data["phone"]
