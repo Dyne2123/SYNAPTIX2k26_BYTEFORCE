@@ -4,6 +4,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from database import MongoDB
+
 from LLM import LLM
 
 # ----------------------------
@@ -14,6 +15,7 @@ load_dotenv()
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN")
 PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+JSEARCH = os.getenv("JSEARCH")
 
 # ----------------------------
 # Initialize Flask App
@@ -106,6 +108,9 @@ def extract_whatsapp_message(payload: dict):
             MongoDB().add_user(user_name,phone_number)
             if not text_message.startswith('/'):
                 chat_bot(phone_number,text_message)
+            else:
+                parse_command(text_message,phone_number)
+            
         else:
             text_message = f"[Unsupported message type: {message_type}]"
 
@@ -157,6 +162,19 @@ def chat_bot(number,message):
     print(number,message)
     response = LLM(message,number)
     send_whatsapp_message(number,response)
+
+def parse_command(command,number):
+    from utility import search_jobs
+    print(command)
+    parsed = command.split()
+
+    print("parsed  ", parsed[1])
+    if parsed[1].strip() == "job":
+        print("inside if")
+        query = " ".join(parsed[2::])
+        print("query ", query)
+        search_jobs(parsed[2],number)
+
 
 
 

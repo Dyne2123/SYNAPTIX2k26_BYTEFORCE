@@ -27,7 +27,7 @@ from google import genai
 #     return response.text
 
 def LLM(message, phonenumber):
-    client = genai.Client(api_key="AIzaSyDaztSFSIvHI4bhsX1K0xzC2Kc130UP0qE")
+    client = genai.Client(api_key="AIzaSyDioNBx4Lc_pYFRCUOhkjyaz9p6XM3CT2A")
     db = MongoDB()
 
 
