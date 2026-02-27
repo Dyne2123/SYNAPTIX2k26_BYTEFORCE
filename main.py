@@ -96,7 +96,7 @@ def extract_whatsapp_message(payload: dict):
 
         message_type = messages[0].get("type")
 
-        # Handle only text messages
+       
         if message_type == "text":
             text_message = messages[0].get("text", {}).get("body")
         else:
