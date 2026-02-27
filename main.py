@@ -185,7 +185,7 @@ def parse_command(command,number):
         search_jobs(parsed[2],number)
 
     if parsed[1].strip() == "help":
-        text = "======= Avaliable commands ========\n1. / job  {query} :to search for jobs\n 2. / gold :to get current live gold price \n 3. / password :to generate strong random password \n 4. / crypto10 :get the price of top 10 crypto currencies \n 5. / getstockprice {company name} :get the stock price of the company"
+        text = "======= Avaliable commands ========\n1. / job  {query} :to search for jobs\n 2. / gold :to get current live gold price \n 3. / password :to generate strong random password \n 4. / crypto10 :get the price of top 10 crypto currencies \n 5. / getstockprice {company name} :get the stock price of the company \n 6. / wiki {context} :To get summary about search term \n 7. / quote {keyword/random} :get random or specific quote \n 8. / getbooks {book domain} :Get the book of the specified domain "
         send_whatsapp_message(number,text)
 
     if parsed[1].strip() == "gold":
@@ -210,7 +210,22 @@ def parse_command(command,number):
         send_whatsapp_message(number,text)
 
 
+    if parsed[1].strip() == "wiki":
+        from utility import wiki
+        context = " ".join(parsed[2::])
+        text = wiki(context)
+        send_whatsapp_message(number,text)
+    
+    if parsed[1].strip() == "quote":
+        from utility import get_quote
+        text = get_quote(parsed[2])
+        send_whatsapp_message(number,text)
 
+    if parsed[1].strip() == "getbooks":
+        from utility import recommend_books
+        domain = " ".join(parsed[2::]).strip()
+        text = "\n\n".join(recommend_books(domain))
+        send_whatsapp_message(number,text)
 
 
 if __name__ == "__main__":

@@ -249,3 +249,72 @@ def get_stock_price(company_name):
     except Exception as e:
         return f"Error: {str(e)}"
 
+
+
+def wiki(context):
+    import wikipedia
+    summary = wikipedia.summary(context, sentences=5)
+    return summary
+
+
+def get_quote(word):
+    from quote import quote
+    import random
+    keywords = [
+    "life",
+    "love",
+    "success",
+    "motivation",
+    "inspiration",
+    "happiness",
+    "friendship",
+    "leadership",
+    "wisdom",
+    "dreams",
+    "courage",
+    "discipline",
+    "confidence",
+    "positivity",
+    "mindset",
+    "growth",
+    "failure",
+    "hardwork",
+    "patience",
+    "faith",
+    "hope",
+    "gratitude",
+    "selflove",
+    "focus",
+    "strength",
+    "kindness",
+    "education",
+    "time",
+    "change",
+    "creativity"
+    ]
+    if word == "random":
+        word = random.choice(keywords)
+
+    # print(word)
+    quotes = quote(word,1)   # required search argument
+    # print(quotes)
+
+    message = f"{quotes[0]["quote"]}    --{quotes[0]["author"]}"
+    return message
+
+
+
+def recommend_books(interest, n=5):
+    url = f"https://openlibrary.org/search.json?q={interest}"
+    res = requests.get(url).json()
+    books = []
+    
+    for doc in res.get('docs', [])[:n]:
+        title = doc.get('title')
+        authors = ", ".join(doc.get('author_name', ['Unknown']))
+        key = doc.get('key')  # /works/OLxxxxW
+        link = f"https://openlibrary.org{key}"
+        books.append(f"📖 {title}\n👤 {authors}\n🔗 {link}")
+    
+    return books
+
