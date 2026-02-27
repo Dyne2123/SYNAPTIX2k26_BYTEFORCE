@@ -103,12 +103,13 @@ def extract_whatsapp_message(payload: dict):
        
         if message_type == "text":
             text_message = messages[0].get("text", {}).get("body")
+            MongoDB().add_user(user_name,phone_number)
+            if not text_message.startswith('/'):
+                chat_bot(phone_number,text_message)
         else:
             text_message = f"[Unsupported message type: {message_type}]"
 
-        MongoDB().add_user(user_name,phone_number)
-        if not text_message.startswith('/'):
-            chat_bot(phone_number,text_message)
+        
 
         return {
             "name": user_name,

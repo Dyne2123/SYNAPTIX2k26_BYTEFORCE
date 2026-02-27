@@ -28,7 +28,7 @@ class MongoDB:
             }
             
             self.collection.insert_one(template)
-            self.add_bot_history(phonenumber,{"system":"only reply to last user message consider remaining as context"})
+            self.add_bot_history(phonenumber,{"system":"only reply to last user message consider remaining as context. Your name is UtilityBot. Introduce yourself at first conversation"})
             print(f"[DEBUG] New user added: {phonenumber}")
         
     def add_bot_history(self,phone_number,message):

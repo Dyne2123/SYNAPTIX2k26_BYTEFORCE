@@ -27,12 +27,12 @@ from google import genai
 #     return response.text
 
 def LLM(message, phonenumber):
-    client = genai.Client(api_key="AIzaSyC5i6V45r3aA6HKs55T0ago2__KHGD-1qI")
+    client = genai.Client(api_key="AIzaSyDaztSFSIvHI4bhsX1K0xzC2Kc130UP0qE")
     db = MongoDB()
 
-    # Fetch history from MongoDB
-    history = db.get_bot_history(phonenumber)  # returns list of dicts
-    # Normalize all history entries to {"role": ..., "content": ...}
+
+    history = db.get_bot_history(phonenumber)  
+
     fixed_history = []
     for msg in history:
         if "user" in msg:
@@ -42,27 +42,22 @@ def LLM(message, phonenumber):
         elif "system" in msg:
             fixed_history.append({"role": "system","content":msg["system"]})
 
-    # Append the current user message
     fixed_history.append({"role": "user", "content": message})
 
-    # Prepare contents list for Gemini
+   
     contents_list = [f"{msg['role']}: {msg['content']}" for msg in fixed_history]
 
     print("Normalized history:", fixed_history)
     print("Contents sent to Gemini:", contents_list)
 
-    # Call Gemini API
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-flash-lite",
         contents=contents_list
     )
 
     bot_reply = response.text
     print("Gemini reply:", bot_reply)
+    MongoDB().add_bot_history(phonenumber,{"assistant":bot_reply})
 
     return bot_reply
 
-
-def chat_bot(data):
-    username = data["name"]
-    phone = data["phone"]
