@@ -57,10 +57,7 @@ def receive_message():
         print("Phone:", user_data["phone_number"])
         print("Message:", user_data["message"])
 
-        # Reply Message
-        # reply_text = f"Hello {user_data['name']}"
-        # send_whatsapp_message(user_data["phone_number"], reply_text)
-
+        
         return "Message processed", 200
 
     except Exception as e:
@@ -180,12 +177,13 @@ def parse_command(command,number):
     print("parsed  ", parsed[1])
     if parsed[1].strip() == "job":
         print("inside if")
+        send_whatsapp_message(number,"fetching job postings........!")
         query = " ".join(parsed[2::])
         print("query ", query)
         search_jobs(parsed[2],number)
 
     if parsed[1].strip() == "help":
-        text = "======= Avaliable commands ========\n1. / job  {query} :to search for jobs\n 2. / gold :to get current live gold price \n 3. / password :to generate strong random password \n 4. / crypto10 :get the price of top 10 crypto currencies \n 5. / getstockprice {company name} :get the stock price of the company \n 6. / wiki {context} :To get summary about search term \n 7. / quote {keyword/random} :get random or specific quote \n 8. / getbooks {book domain} :Get the book of the specified domain "
+        text = "======= Avaliable commands ========\n1. / job  {query} :to search for jobs\n 2. / gold :to get current live gold price \n 3. / password :to generate strong random password \n 4. / crypto10 :get the price of top 10 crypto currencies \n 5. / getstockprice {company name} :get the stock price of the company \n 6. / wiki {context} :To get summary about search term \n 7. / quote {keyword/random} :get random or specific quote \n 8. / getbooks {book domain} :Get the book of the specified domain \n 9. / deals {product name} :to get best deals to buy product"
         send_whatsapp_message(number,text)
 
     if parsed[1].strip() == "gold":
@@ -222,9 +220,17 @@ def parse_command(command,number):
         send_whatsapp_message(number,text)
 
     if parsed[1].strip() == "getbooks":
+        send_whatsapp_message(number,"fetching books.........!")
         from utility import recommend_books
         domain = " ".join(parsed[2::]).strip()
         text = "\n\n".join(recommend_books(domain))
+        send_whatsapp_message(number,text)
+
+    if parsed[1].strip() == "deals":
+        from utility import get_lowest_price_summary
+        context = " ".join(parsed[2::])
+        send_whatsapp_message(number,"fetching best deals.........")
+        text = get_lowest_price_summary(context)
         send_whatsapp_message(number,text)
 
 

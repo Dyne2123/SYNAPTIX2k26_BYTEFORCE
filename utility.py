@@ -318,3 +318,102 @@ def recommend_books(interest, n=5):
     
     return books
 
+
+
+from urllib.parse import urlparse
+
+API_KEY = "pricesapi_YIPXbymzr0DSSrVUgg5ILU2lN8tuLz34"
+
+# ✅ Trusted sellers list (edit based on your country)
+TRUSTED_DOMAINS = [
+    "amazon.",
+    "flipkart.",
+    "apple.com",
+    "bestbuy.",
+    "walmart.",
+    "croma.",
+    "reliancedigital."
+]
+
+def is_trusted(url):
+    if not url:
+        return False
+    domain = urlparse(url).netloc.lower()
+    return any(trusted in domain for trusted in TRUSTED_DOMAINS)
+
+
+def get_lowest_price_summary(product_query, limit=10):
+
+    response = requests.get(
+        'https://api.pricesapi.io/api/v1/products/search',
+        params={'q': product_query, 'limit': limit},
+        headers={'x-api-key': API_KEY}
+    )
+
+    data = response.json()
+    print(data)
+
+    if not data.get("success"):
+        return "Search failed."
+
+    products = data["data"]["results"]
+    all_lowest_products = []
+
+    for product in products:
+        product_id = product["id"]
+
+        offer_response = requests.get(
+            f'https://api.pricesapi.io/api/v1/products/{product_id}/offers',
+            headers={'x-api-key': API_KEY}
+        )
+
+        offer_data = offer_response.json()
+
+        if not offer_data.get("success"):
+            continue
+
+        offers = offer_data["data"].get("offers", [])
+
+        # Extract valid + trusted offers only
+        trusted_offers = []
+
+        for offer in offers:
+            price = offer.get("price")
+            link = (
+                offer.get("url")
+                or offer.get("link")
+                or offer.get("productUrl")
+            )
+
+            if price is not None and link and is_trusted(link):
+                trusted_offers.append(offer)
+
+        if not trusted_offers:
+            continue
+
+        # Sort trusted offers by price
+        trusted_offers.sort(key=lambda x: x["price"])
+        lowest_offer = trusted_offers[0]
+
+        seller_link = (
+            lowest_offer.get("url")
+            or lowest_offer.get("link")
+            or lowest_offer.get("productUrl")
+        )
+
+        summary = f"""Product       : {product['title']}
+Lowest Price  : {lowest_offer.get('price')} {lowest_offer.get('currency')}
+Seller        : {lowest_offer.get('seller')}
+Seller Link   : {seller_link}
+Rating        : {lowest_offer.get('rating', 'N/A')}
+--------------------------------------------------"""
+
+        all_lowest_products.append((lowest_offer.get("price"), summary))
+
+    all_lowest_products.sort(key=lambda x: x[0])
+
+    if not all_lowest_products:
+        return "No trusted dealer offers found."
+
+    return "\n\n".join([item[1] for item in all_lowest_products])
+

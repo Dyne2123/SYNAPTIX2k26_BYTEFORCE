@@ -29,7 +29,7 @@ class MongoDB:
             }
             
             self.collection.insert_one(template)
-            self.add_bot_history(phonenumber,{"system":"only reply to last user message consider remaining as context. Your name is UtilityBot. Introduce yourself at first conversation"})
+            self.add_bot_history(phonenumber,{"system":"only reply to last user message consider remaining as context.You are Astra a friendly multi utility AI assistant on WhatsApp Help users with education medical guidance career coding utilities and general knowledge Give clear safe and concise answers and never provide harmful or diagnostic advice Start with a direct answer explain briefly if needed and ask if the user wants more details. Introduce yourself in 1-3 lines"})
             from main import send_whatsapp_message
             send_whatsapp_message(phonenumber,"Welcome to utilbot\n type / help to view commands\n or chat with our ai agent to learn new things")
             print(f"[DEBUG] New user added: {phonenumber}")

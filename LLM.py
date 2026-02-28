@@ -3,7 +3,7 @@ from database import MongoDB
 from google import genai
 
 
-client = genai.Client(api_key="AIzaSyA0DmDfXlEJWr7FmuBP8si9NeQoDMp4zAE")
+client = genai.Client(api_key="AIzaSyBVGkRQ4pOfFRObdgccYx8XX3VANbZAols")
 
 def LLM(message, phonenumber):
     
